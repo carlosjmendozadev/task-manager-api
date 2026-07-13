@@ -12,8 +12,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-
-import java.util.List;
+import org.springframework.data.domain.Pageable;
+import com.taskmanager.helper.PaginatedResponse;
+import com.taskmanager.dto.TaskDto;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,9 +33,8 @@ public class TaskController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Task>> getAllTasks() {
-        List<Task> tasks = taskService.getAllTasks();
-        return ResponseEntity.ok(tasks);
+    public ResponseEntity<PaginatedResponse<TaskDto>> getAllTasks(Pageable pageable) {
+        return ResponseEntity.ok(taskService.getAllTasks(pageable));
     }
 
     @GetMapping("/{id}")

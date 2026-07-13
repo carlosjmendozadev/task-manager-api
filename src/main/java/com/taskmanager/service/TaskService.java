@@ -5,7 +5,10 @@ import com.taskmanager.entity.Task;
 import com.taskmanager.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
-import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import com.taskmanager.helper.PaginatedResponse;
+import com.taskmanager.dto.TaskDto;
 
 @Service
 @RequiredArgsConstructor
@@ -17,8 +20,19 @@ public class TaskService {
         return taskRepository.save(task);
     }
 
-    public List<Task> getAllTasks() {
-        return taskRepository.findAll();
+    public PaginatedResponse<TaskDto> getAllTasks(Pageable pageable) {
+        Page<Task> page = taskRepository.findAll(pageable);
+
+        Page<TaskDto> taskDtoPage = page.map(task -> {
+            TaskDto taskDto = new TaskDto();
+            taskDto.setId(task.getId());
+            taskDto.setTitle(task.getTitle());
+            taskDto.setDescription(task.getDescription());
+            taskDto.setCompleted(task.getCompleted());
+            return taskDto;
+        });
+
+        return new PaginatedResponse<>(taskDtoPage);
     }
 
     public Task getTaskById(Long id) {
