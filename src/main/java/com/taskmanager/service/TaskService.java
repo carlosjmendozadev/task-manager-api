@@ -16,8 +16,14 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
 
-    public Task createTask(Task task) {
-        return taskRepository.save(task);
+    public TaskDto createTask(Task task) {
+        var taskSaved = taskRepository.save(task);
+        TaskDto taskDto = new TaskDto();
+        taskDto.setId(taskSaved.getId());
+        taskDto.setTitle(taskSaved.getTitle());
+        taskDto.setDescription(taskSaved.getDescription());
+        taskDto.setCompleted(taskSaved.getCompleted());
+        return taskDto;
     }
 
     public PaginatedResponse<TaskDto> getAllTasks(Pageable pageable) {
@@ -35,20 +41,38 @@ public class TaskService {
         return new PaginatedResponse<>(taskDtoPage);
     }
 
-    public Task getTaskById(Long id) {
-        return taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Task not found with id: " + id));
+    public TaskDto getTaskById(Long id) {
+        var taskFound = taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Task not found with id: " + id));
+
+        TaskDto taskDto = new TaskDto();
+        taskDto.setId(taskFound.getId());
+        taskDto.setTitle(taskFound.getTitle());
+        taskDto.setDescription(taskFound.getDescription());
+        taskDto.setCompleted(taskFound.getCompleted());
+
+        return taskDto;
     }
 
-    public Task updateTask(Long id, Task updatedTask) {
-        Task existingTask = getTaskById(id);
+    public TaskDto updateTask(Long id, Task updatedTask) {
+
+        var existingTask = taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Task not found with id: " + id));
+
         existingTask.setTitle(updatedTask.getTitle());
         existingTask.setDescription(updatedTask.getDescription());
         existingTask.setCompleted(updatedTask.getCompleted());
-        return taskRepository.save(existingTask);
+        var newTask = taskRepository.save(existingTask);
+
+        TaskDto taskDto = new TaskDto();
+        taskDto.setId(newTask.getId());
+        taskDto.setTitle(newTask.getTitle());
+        taskDto.setDescription(newTask.getDescription());
+        taskDto.setCompleted(updatedTask.getCompleted());
+
+        return taskDto;
     }
 
     public void deleteTask(Long id) {
-        Task existingTask = getTaskById(id);
+         var existingTask = taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Task not found with id: " + id));
         taskRepository.delete(existingTask);
     }
     
