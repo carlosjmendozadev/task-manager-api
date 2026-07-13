@@ -3,6 +3,7 @@ package com.taskmanager.service;
 import com.taskmanager.entity.Task;
 
 import com.taskmanager.repository.TaskRepository;
+import com.taskmanager.mapper.TaskMapper;
 import org.springframework.stereotype.Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,14 +16,13 @@ import com.taskmanager.dto.TaskDto;
 public class TaskService {
 
     private final TaskRepository taskRepository;
+    private final TaskMapper taskMapper;
 
     public TaskDto createTask(Task task) {
         var taskSaved = taskRepository.save(task);
-        TaskDto taskDto = new TaskDto();
-        taskDto.setId(taskSaved.getId());
-        taskDto.setTitle(taskSaved.getTitle());
-        taskDto.setDescription(taskSaved.getDescription());
-        taskDto.setCompleted(taskSaved.getCompleted());
+
+        TaskDto taskDto = taskMapper.toTaskDto(taskSaved);
+
         return taskDto;
     }
 
@@ -30,11 +30,9 @@ public class TaskService {
         Page<Task> page = taskRepository.findAll(pageable);
 
         Page<TaskDto> taskDtoPage = page.map(task -> {
-            TaskDto taskDto = new TaskDto();
-            taskDto.setId(task.getId());
-            taskDto.setTitle(task.getTitle());
-            taskDto.setDescription(task.getDescription());
-            taskDto.setCompleted(task.getCompleted());
+
+            TaskDto taskDto = taskMapper.toTaskDto(task);
+
             return taskDto;
         });
 
@@ -44,11 +42,7 @@ public class TaskService {
     public TaskDto getTaskById(Long id) {
         var taskFound = taskRepository.findById(id).orElseThrow(() -> new RuntimeException("Task not found with id: " + id));
 
-        TaskDto taskDto = new TaskDto();
-        taskDto.setId(taskFound.getId());
-        taskDto.setTitle(taskFound.getTitle());
-        taskDto.setDescription(taskFound.getDescription());
-        taskDto.setCompleted(taskFound.getCompleted());
+        TaskDto taskDto = taskMapper.toTaskDto(taskFound);
 
         return taskDto;
     }
@@ -60,13 +54,9 @@ public class TaskService {
         existingTask.setTitle(updatedTask.getTitle());
         existingTask.setDescription(updatedTask.getDescription());
         existingTask.setCompleted(updatedTask.getCompleted());
-        var newTask = taskRepository.save(existingTask);
 
-        TaskDto taskDto = new TaskDto();
-        taskDto.setId(newTask.getId());
-        taskDto.setTitle(newTask.getTitle());
-        taskDto.setDescription(newTask.getDescription());
-        taskDto.setCompleted(updatedTask.getCompleted());
+        var newTask = taskRepository.save(existingTask);
+        TaskDto taskDto = taskMapper.toTaskDto(newTask);
 
         return taskDto;
     }

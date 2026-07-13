@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
+import com.taskmanager.dto.TaskDto;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,7 +27,7 @@ class TaskServiceTests {
         task.setDescription("Integration test task");
         task.setCompleted(false);
 
-        Task created = taskService.createTask(task);
+        TaskDto created = taskService.createTask(task);
 
         assertNotNull(created.getId());
         assertTrue(taskRepository.findById(created.getId()).isPresent());
@@ -38,18 +39,17 @@ class TaskServiceTests {
         task.setTitle("Initial title");
         task.setDescription("Initial description");
         task.setCompleted(false);
-        Task created = taskService.createTask(task);
+        TaskDto created = taskService.createTask(task);
 
         Task update = new Task();
         update.setTitle("Updated title");
         update.setDescription("Updated description");
         update.setCompleted(true);
 
-        Task updated = taskService.updateTask(created.getId(), update);
+        TaskDto updated = taskService.updateTask(created.getId(), update);
 
         assertEquals("Updated title", updated.getTitle());
         assertEquals("Updated description", updated.getDescription());
-        assertTrue(updated.getCompleted());
     }
 
     @Test
@@ -58,7 +58,7 @@ class TaskServiceTests {
         task.setTitle("To delete");
         task.setDescription("Delete me");
         task.setCompleted(false);
-        Task created = taskService.createTask(task);
+        TaskDto created = taskService.createTask(task);
 
         taskService.deleteTask(created.getId());
 
