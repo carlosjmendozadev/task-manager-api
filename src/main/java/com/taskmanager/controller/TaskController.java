@@ -2,6 +2,9 @@ package com.taskmanager.controller;
 
 import com.taskmanager.entity.Task;
 import com.taskmanager.service.TaskService;
+
+import lombok.RequiredArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,36 +18,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.data.domain.Pageable;
 import com.taskmanager.helper.PaginatedResponse;
 import com.taskmanager.dto.TaskDto;
-import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Bandwidth;
-import java.time.Duration;
 
 @RestController
 @RequestMapping("/api/tasks")
+@RequiredArgsConstructor
 public class TaskController {
 
     private final TaskService taskService;
-    private final Bucket bucket;
-
-    public TaskController(TaskService taskService) {
-        this.taskService = taskService;
-        
-        Bandwidth limit = Bandwidth.builder()
-                .capacity(10)
-                .refillGreedy(10, Duration.ofMinutes(1))
-                .build();
-
-        this.bucket = Bucket.builder().addLimit(limit).build();
-    }
 
     @PostMapping
     public ResponseEntity<TaskDto> createTask(@RequestBody Task task) {
-        if(bucket.tryConsume(1)) {
             TaskDto createdTask = taskService.createTask(task);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdTask);
-        } else {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).build();
-        }
     }
 
     @GetMapping
