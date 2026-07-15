@@ -3,6 +3,7 @@ package com.taskmanager.controller;
 import com.taskmanager.entity.Task;
 import com.taskmanager.service.TaskService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
@@ -27,7 +28,7 @@ public class TaskController {
     private final TaskService taskService;
 
     @PostMapping
-    public ResponseEntity<TaskDto> createTask(@RequestBody Task task) {
+    public ResponseEntity<TaskDto> createTask(@Valid @RequestBody Task task) {
             TaskDto createdTask = taskService.createTask(task);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdTask);
     }
