@@ -127,6 +127,13 @@ DELETE /api/tasks/1
 Response: 204 No Content
 ```
 
+## 📖 API Documentation (Swagger)
+
+A documentação interativa da API é gerada automaticamente via springdoc-openapi:
+
+- Swagger UI: `http://localhost:8080/swagger-ui/index.html` (local) / `https://task-manager-api-ella.onrender.com/swagger-ui/index.html` (produção)
+- OpenAPI JSON spec: `http://localhost:8080/v3/api-docs` (local) / `https://task-manager-api-ella.onrender.com/v3/api-docs` (produção)
+
 ## 📁 Estrutura do Projeto
 
 src/main/java/com/taskmanager/
