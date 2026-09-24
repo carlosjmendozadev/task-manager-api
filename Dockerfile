@@ -1,5 +1,5 @@
 # Build stage: compile the Spring Boot application with Maven and Java 21
-FROM maven:3.9.9-eclipse-temurin-21 AS builder
+FROM maven:3.9.9-eclipse-temurin-21 AS build
 WORKDIR /build
 
 # Copy Maven wrapper and project metadata first to leverage dependency caching
