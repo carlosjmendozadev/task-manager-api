@@ -65,4 +65,4 @@ jobs:
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
       - name: Print image URL
-        run: echo "Image pushed: ${{ steps.image.outputs.image }}"
+        run: echo "Image pushed - ${{ steps.image.outputs.image }}"
