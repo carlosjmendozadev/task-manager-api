@@ -47,6 +47,6 @@ jobs:
           envs: DB_HOST,DB_USER,DB_PASS,ECR_REGISTRY,IMAGE_TAG,AWS_REGION
           script: |
             export DB_PORT=3306
-            export DB_NAME=app_db
+            export DB_NAME=minha-app-db
 
             bash /opt/deploy.sh "$ECR_REGISTRY" "$IMAGE_TAG"
