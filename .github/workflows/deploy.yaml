@@ -5,37 +5,71 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# Permissões mínimas para o GITHUB_TOKEN
+permissions:
+  contents: read
+
+# Evita dois deploys simultâneos; o novo espera o atual terminar
+concurrency:
+  group: deploy-ec2
+  cancel-in-progress: false
+
 env:
   AWS_REGION: us-east-1
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Deploy to EC2
-        uses: appleboy/ssh-action@master
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DB_HOST: ${{ secrets.RDS_HOST }}
+          DB_USER: ${{ secrets.RDS_USER }}
+          DB_PASS: ${{ secrets.RDS_PASSWORD }}
+          ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
+          IMAGE_TAG: ${{ github.sha }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           port: 22
+          script_stop: true
+          command_timeout: 10m
+          # Variáveis passadas sem interpolar secrets dentro do script
+          envs: DB_HOST,DB_USER,DB_PASS,ECR_REGISTRY,IMAGE_TAG,AWS_REGION
           script: |
-            export AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
-            export AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            export DB_HOST=${{ secrets.RDS_HOST }}
             export DB_PORT=3306
             export DB_NAME=app_db
-            export DB_USER=${{ secrets.RDS_USER }}
-            export DB_PASS=${{ secrets.RDS_PASSWORD }}
-            
-            bash /opt/deploy.sh ${{ secrets.ECR_REGISTRY }} ${{ github.sha }}
 
+            bash /opt/deploy.sh "$ECR_REGISTRY" "$IMAGE_TAG"
+
+      # Health check feito de dentro da EC2 (não precisa abrir a 8080 no Security Group)
       - name: Verify deployment
-        run: |
-          sleep 10
-          curl -f http://${{ secrets.EC2_HOST }}:8080/actuator/health || exit 1
-          echo "✅ Application is healthy"
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          port: 22
+          command_timeout: 5m
+          script: |
+            for i in $(seq 1 30); do
+              if curl -fs http://localhost:8080/actuator/health; then
+                echo ""
+                echo "✅ Application is healthy"
+                exit 0
+              fi
+              echo "Tentativa $i/30 falhou, aguardando 5s..."
+              sleep 5
+            done
+
+            echo "❌ Aplicação não ficou saudável"
+            docker ps -a || true
+            docker logs --tail 100 "$(docker ps -a --latest -q)" || true
+            exit 1
