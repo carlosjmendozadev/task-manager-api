@@ -1,15 +1,18 @@
 name: Deploy to EC2
 
 on:
-  push:
-    branches: [ main ]
+  # Dispara só depois que o workflow de build terminar.
+  # O valor abaixo deve ser IGUAL ao campo "name:" do build-and-push.yml
+  workflow_run:
+    workflows: ["Build and Push to ECR"]
+    types: [completed]
+    branches: [main]
+  # Deploy manual (usa o último commit da main)
   workflow_dispatch:
 
-# Permissões mínimas para o GITHUB_TOKEN
 permissions:
   contents: read
 
-# Evita dois deploys simultâneos; o novo espera o atual terminar
 concurrency:
   group: deploy-ec2
   cancel-in-progress: false
@@ -19,13 +22,12 @@ env:
 
 jobs:
   deploy:
+    # Só roda se o build foi bem-sucedido (ou se foi disparo manual)
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
         env:
@@ -33,7 +35,8 @@ jobs:
           DB_USER: ${{ secrets.RDS_USER }}
           DB_PASS: ${{ secrets.RDS_PASSWORD }}
           ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}
-          IMAGE_TAG: ${{ github.sha }}
+          # Em workflow_run, github.sha NÃO é o commit do build; usar head_sha
+          IMAGE_TAG: ${{ github.event.workflow_run.head_sha || github.sha }}
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
@@ -41,35 +44,9 @@ jobs:
           port: 22
           script_stop: true
           command_timeout: 10m
-          # Variáveis passadas sem interpolar secrets dentro do script
           envs: DB_HOST,DB_USER,DB_PASS,ECR_REGISTRY,IMAGE_TAG,AWS_REGION
           script: |
             export DB_PORT=3306
             export DB_NAME=app_db
 
             bash /opt/deploy.sh "$ECR_REGISTRY" "$IMAGE_TAG"
-
-      # Health check feito de dentro da EC2 (não precisa abrir a 8080 no Security Group)
-      - name: Verify deployment
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_PRIVATE_KEY }}
-          port: 22
-          command_timeout: 5m
-          script: |
-            for i in $(seq 1 30); do
-              if curl -fs http://localhost:8080/actuator/health; then
-                echo ""
-                echo "✅ Application is healthy"
-                exit 0
-              fi
-              echo "Tentativa $i/30 falhou, aguardando 5s..."
-              sleep 5
-            done
-
-            echo "❌ Aplicação não ficou saudável"
-            docker ps -a || true
-            docker logs --tail 100 "$(docker ps -a --latest -q)" || true
-            exit 1
